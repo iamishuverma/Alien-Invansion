@@ -5,7 +5,6 @@ class Settings():
 		# Game settings.
 		self.height = 600
 		self.width = 1200
-		self.bg_color = (230,230,230)
 		self.title = "Alien Invansion"
 		
 		# Ship settings.
@@ -14,8 +13,8 @@ class Settings():
 		# Bullet settings.
 		self.bullet_width = 3
 		self.bullet_height = 15
-		self.bullet_color = 60,60,60
-		self.bullets_allowed = 3
+		self.bullet_color = 255,255,255
+		self.bullets_allowed = 5
 		
 		# Alien settings.
 		self.fleet_drop_speed = 10
@@ -41,12 +40,4 @@ class Settings():
 		self.bullet_speed_factor *= self.speedup_scale
 		self.alien_speed_factor *= self.speedup_scale
 		
-		self.alien_points = int(self.alien_points * self.score_scale)
-		
-		
-		
-		
-		
-		
-		
-			
+		self.alien_points = int(self.alien_points * self.score_scale)		

@@ -15,6 +15,14 @@ def run_game():
 	screen = pygame.display.set_mode((ai_settings.width,ai_settings.height))
 	pygame.display.set_caption(ai_settings.title)
 	
+	# Load and play background music.
+	pygame.mixer.music.load('sounds/background_music.ogg')
+	pygame.mixer.music.play(-1)
+	
+	# Create sound objects.
+	shoot_sound = pygame.mixer.Sound('sounds/shoot_sound.ogg')
+	destroy_sound = pygame.mixer.Sound('sounds/destroy_sound.ogg');
+	
 	# Make the play button.
 	play_button = Button(ai_settings,screen,"Play")
 	
@@ -38,11 +46,11 @@ def run_game():
 	while True:
 	
 		# Watch for keyboard and mouse events.
-		gf.check_events(ship,bullets,screen,ai_settings,play_button,stats,aliens,sb)
+		gf.check_events(ship,bullets,screen,ai_settings,play_button,stats,aliens,sb,shoot_sound)
 		
 		if stats.game_active:
 			ship.update()
-			gf.update_bullets(bullets,aliens,ship,ai_settings,screen,stats,sb)
+			gf.update_bullets(bullets,aliens,ship,ai_settings,screen,stats,sb,destroy_sound)
 			gf.update_aliens(ai_settings,aliens,ship,stats,screen,bullets,sb)
 			
 		# Update the screen with background color and ship image.

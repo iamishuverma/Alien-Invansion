@@ -18,6 +18,10 @@ class Ship(Sprite):
 		self.rect = self.image.get_rect()
 		self.screen_rect = screen.get_rect()
 		
+		# Implementing colorkey transparency.
+		color = (230, 230, 230)
+		self.image.set_colorkey(color)
+		
 		# Start each new ship at the bottom center of the screen.
 		self.rect.centerx = float(self.screen_rect.centerx)
 		self.rect.bottom = self.screen_rect.bottom

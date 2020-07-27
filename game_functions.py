@@ -1,20 +1,31 @@
 import sys
 import pygame
+import json
 from bullet import Bullet
 from alien import Alien
 from time import sleep
 
-def check_events(ship, bullets, screen, ai_settings, play_button, stats, aliens, sb):
+def check_events(ship, bullets, screen, ai_settings, play_button, stats, aliens, sb, shoot_sound):
 	"""Respond to key presses and mouse events"""
 	for event in pygame.event.get():
 		if(event.type == pygame.QUIT):
+			
+			# Write high score to the file.
+			filename = 'data/high_score.json'
+			with open(filename,'w') as f_obj:
+				json.dump(stats.high_score,f_obj)
+			
+			# Stop the background music and make mixer quit.
+			pygame.mixer.music.stop()
+			pygame.mixer.quit()
+		
 			sys.exit()
 		elif(event.type == pygame.MOUSEBUTTONDOWN):						# If mouse button is clicked.
 			mouse_x, mouse_y = pygame.mouse.get_pos()
 			check_play_button(play_button,mouse_x,mouse_y,stats,ship,bullets,aliens,ai_settings,screen,sb)
 		
 		elif(event.type == pygame.KEYDOWN):								# If the event if a keypress.
-			check_keydown_events(event,ship,screen,ai_settings,bullets)
+			check_keydown_events(event,ship,screen,ai_settings,bullets,shoot_sound,stats)
 			
 		elif(event.type == pygame.KEYUP):								# If the event is keyreleased.
 			check_keyup_events(event,ship)
@@ -23,8 +34,9 @@ def update_screen(screen, ai_settings, ship, bullets, aliens, play_button, stats
 	"""Set the background color, display the ship image and make screen visible"""
 	
 	# Redraw the screen during each pass through the loop.
-	screen.fill(ai_settings.bg_color)
 	
+	draw_background(screen)
+
 	# Draw bullets to the screen.
 	for bullet in bullets.sprites():
 		bullet.draw_bullet()
@@ -45,12 +57,22 @@ def update_screen(screen, ai_settings, ship, bullets, aliens, play_button, stats
 	# Make the most recently drawn screen visible.
 	pygame.display.flip()
 	
+def draw_background(screen):
+	screen_rect = screen.get_rect()
+	image = pygame.image.load('images/background.bmp')
+	rect = image.get_rect()
+	rect.top = screen_rect.top
+	screen.blit(image,rect)	
+	
 def check_play_button(play_button, mouse_x, mouse_y, stats, ship, bullets, aliens, ai_settings, screen, sb):
 	"""Start a new game when the user clicks Play"""
 	button_clicked = play_button.rect.collidepoint(mouse_x,mouse_y)
 	if button_clicked and not stats.game_active:
 		# Reset the game settings.
 		ai_settings.initialize_dynamic_settings()
+		
+		# Rewind the background music whenever a new game starts.
+		pygame.mixer.music.rewind()
 		
 		# Hide the mouse cursor.
 		pygame.mouse.set_visible(False)
@@ -70,7 +92,7 @@ def check_play_button(play_button, mouse_x, mouse_y, stats, ship, bullets, alien
 		create_fleet(screen,ai_settings,aliens,ship)
 		ship.center_ship()
 		
-def check_keydown_events(event, ship, screen, ai_settings, bullets):
+def check_keydown_events(event, ship, screen, ai_settings, bullets, shoot_sound, stats):
 	if(event.key == pygame.K_RIGHT):							# If RIGHT key is pressed.
 		# Move the ship to the right
 		ship.moving_right = True
@@ -78,8 +100,20 @@ def check_keydown_events(event, ship, screen, ai_settings, bullets):
 		# Move the ship to the left
 		ship.moving_left = True
 	elif(event.key == pygame.K_SPACE):							# If SPACE bar is pressed.
-		fire_bullet(bullets,ai_settings,screen,ship)
+	
+		# Fire bullet if the game is active.
+		if stats.game_active:
+			fire_bullet(bullets,ai_settings,screen,ship,shoot_sound)
 	elif(event.key == pygame.K_q):
+		# Write high score to the file.
+		filename = 'data/high_score.json'
+		with open(filename,'w') as f_obj:
+			json.dump(stats.high_score,f_obj)
+	
+		# Stop the background music and make mixer quit.
+		pygame.mixer.music.stop()
+		pygame.mixer.quit()
+		
 		sys.exit()
 
 def check_keyup_events(event,ship):
@@ -90,23 +124,27 @@ def check_keyup_events(event,ship):
 		# Stop moving the ship to the left
 		ship.moving_left = False
 		
-def update_bullets(bullets, aliens, ship, ai_settings, screen, stats, sb):
+def update_bullets(bullets, aliens, ship, ai_settings, screen, stats, sb, destroy_sound):
 	# Update the positions of all bullets
 	bullets.update()
 	
-	check_bullet_alien_collisions(bullets,aliens,ship,ai_settings,screen,stats,sb)
+	check_bullet_alien_collisions(bullets,aliens,ship,ai_settings,screen,stats,sb,destroy_sound)
 	
 	# Get rid of bullets that have disappeared.
 	for bullet in bullets.copy():
 		if(bullet.rect.bottom <= 0):
 			bullets.remove(bullet)
 	
-def check_bullet_alien_collisions(bullets, aliens, ship, ai_settings, screen, stats, sb):
+def check_bullet_alien_collisions(bullets, aliens, ship, ai_settings, screen, stats, sb, destroy_sound):
 	# Detecting collisions between bullets and aliens and deleting both of them if there is a collision.
 	collision = pygame.sprite.groupcollide(bullets, aliens, True, True)
 	
 	if collision:
 		for aliens in collision.values():
+			
+			# Play the alien destroy sound
+			destroy_sound.play(maxtime = 300)
+			
 			stats.score += ai_settings.alien_points * len(aliens)
 			sb.prep_score()
 		check_high_score(stats,sb)
@@ -122,9 +160,12 @@ def check_bullet_alien_collisions(bullets, aliens, ship, ai_settings, screen, st
 		
 		create_fleet(screen,ai_settings,aliens,ship)
 	
-def fire_bullet(bullets, ai_settings, screen, ship):
+def fire_bullet(bullets, ai_settings, screen, ship, shoot_sound):
 	if(len(bullets) < ai_settings.bullets_allowed):
-		# Fire the bullet
+		# Fire the bullet and play the shooting sound.
+		
+		shoot_sound.play(maxtime = 100)
+				
 		new_bullet = Bullet(screen,ship,ai_settings)
 		bullets.add(new_bullet)
 		
